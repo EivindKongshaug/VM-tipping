@@ -13,8 +13,8 @@ h1 { margin:0; font-size:20px; }
 
 .card { background:#151f35; margin:10px; padding:12px; border-radius:10px; }
 .leader { border:2px solid gold; }
-
 .row { display:flex; justify-content:space-between; }
+button { margin:10px; padding:10px; border-radius:8px; border:0; }
 </style>
 </head>
 
@@ -25,27 +25,23 @@ h1 { margin:0; font-size:20px; }
 <p class="small">Oppdateres automatisk hvert 60 sek</p>
 </header>
 
+<button onclick="fetchLive()">Oppdater nå</button>
+
 <div id="app"></div>
 
 <script>
 
-/* =========================
-   
-   ========================= */
+/* 🔑 API KEY */
 const API_KEY = "234985fb7b4a22f79103b10751c61806";
 
-/* 👆👆👆 DU KOPIERER API KEY FRA DASHBOARD
-   og limer den inn mellom hermetegnene */
-
-/* ========================= */
-
+/* ⚽ DINE SPILLERE */
 const PLAYERS = ["Staals","Kong","Dox","Jojo","Marko","Barra"];
 
-/* DINE KAMPER (forkortet men fungerer – kan utvides til alle 72 hvis du vil senere) */
+/* ⚽ KAMPER (må matche eksakt API-navn!) */
 const MATCHES = [
 {id:1,home:"Mexico",away:"South Africa",tips:["3-0","2-1","2-0","3-1","2-1","3-0"]},
 {id:2,home:"South Korea",away:"Czech Republic",tips:["2-1","1-1","1-1","2-3","1-0","1-2"]},
-{id:3,home:"Canada",away:"Bosnia-Herzegovina",tips:["1-1","0-1","2-1","2-0","1-1","2-0"]},
+{id:3,home:"Canada",away:"Bosnia and Herzegovina",tips:["1-1","0-1","2-1","2-0","1-1","2-0"]},
 {id:4,home:"United States",away:"Paraguay",tips:["2-1","1-1","0-0","2-3","3-0","2-1"]},
 {id:5,home:"Qatar",away:"Switzerland",tips:["0-3","0-3","0-1","1-3","0-2","0-3"]},
 {id:6,home:"Brazil",away:"Morocco",tips:["2-2","1-1","3-1","2-2","2-1","2-1"]}
@@ -53,28 +49,41 @@ const MATCHES = [
 
 let results = {};
 
-/* =========================
-   🔴 LIVE HENTING
-   ========================= */
+/* 🔥 HENT KUN FERDIGE KAMPER */
 async function fetchLive() {
   try {
     const res = await fetch(
-      "https://v3.football.api-sports.io/fixtures?season=2026",
+      "https://v3.football.api-sports.io/fixtures?live=all",
       {
         headers: {
-          "x-apisports-key": API_KEY   // 👈 HER BRUKES API-KODEN DIN
+          "x-apisports-key": API_KEY
         }
       }
     );
 
     const data = await res.json();
 
-    data.response.forEach(m => {
-      if (m.fixture.status.short !== "FT") return;
+    /* 🧠 hent også ferdigspilte kamper via fallback */
+    const res2 = await fetch(
+      "https://v3.football.api-sports.io/fixtures?status=FT&season=2026",
+      {
+        headers: {
+          "x-apisports-key": API_KEY
+        }
+      }
+    );
+
+    const data2 = await res2.json();
+
+    const all = [...(data.response || []), ...(data2.response || [])];
+
+    all.forEach(m => {
+      if (!m.score?.fulltime) return;
 
       const home = m.teams.home.name;
       const away = m.teams.away.name;
-      const score = m.goals.home + "-" + m.goals.away;
+
+      const score = `${m.score.fulltime.home}-${m.score.fulltime.away}`;
 
       const match = MATCHES.find(x =>
         x.home === home && x.away === away
@@ -84,14 +93,13 @@ async function fetchLive() {
     });
 
     render();
+
   } catch (e) {
     console.log("API feil", e);
   }
 }
 
-/* =========================
-   📊 POENGSYSTEM
-   ========================= */
+/* 🧮 POENG */
 function points(actual, tip) {
   if (!actual) return 0;
 
@@ -100,15 +108,13 @@ function points(actual, tip) {
   const a = actual.split("-").map(Number);
   const t = tip.split("-").map(Number);
 
-  const resA = Math.sign(a[0] - a[1]);
-  const resT = Math.sign(t[0] - t[1]);
+  const ra = Math.sign(a[0]-a[1]);
+  const rt = Math.sign(t[0]-t[1]);
 
-  return resA === resT ? 2 : 0;
+  return ra === rt ? 2 : 0;
 }
 
-/* =========================
-   🏆 RENDER TABELL
-   ========================= */
+/* 🏆 RENDER */
 function render() {
   const scores = PLAYERS.map((p,i)=>{
     let total = 0;
@@ -133,9 +139,7 @@ function render() {
     `).join("");
 }
 
-/* =========================
-   🚀 START AUTO-OPPDATERING
-   ========================= */
+/* 🚀 AUTO UPDATE */
 fetchLive();
 setInterval(fetchLive, 60000);
 
