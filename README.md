@@ -1,5 +1,3 @@
-# VM-tipping
-Tippeligaen
 cat > /mnt/user-data/outputs/vm2026.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="no">
