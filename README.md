@@ -376,3 +376,8 @@ setInterval(loadScores, 5 * 60 * 1000);
 </html>
 HTMLEOF
 echo "Done. $(wc -c < /mnt/user-data/outputs/vm2026.html) bytes"
+{
+  "returncode" : 0,
+  "stdout" : "Done. 23256 bytes\n",
+  "stderr" : ""
+}
